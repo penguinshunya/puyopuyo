@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<style>
+#board {
+  width: 192px;
+  height: 384px;
+  border: 1px solid black;
+}
+
+#board div {
+  float: left;
+  width: 32px;
+  height: 32px;
+}
+
+#board div.red {
+  background-color: red;
+}
+
+#board div.blue {
+  background-color: blue;
+}
+
+#board div.yellow {
+  background-color: yellow;
+}
+
+#board div.green {
+  background-color: green;
+}
+
+#board div.test {
+  background-color: black;
+}
+</style>
+<div id="board"></div>
+<script src="jquery.js"></script>
+<script src="underscore.js"></script>
+
+<script>
+var X = 6,
+    Y = 12;
+
+var toArray = function(likeArray) {
+  return Array.prototype.slice.call(likeArray, 0);
+};
+
+var p = function() {
+  console.log.apply(console, toArray(arguments));
+};
+
+// 二次元配列の作成
+var twoArray = function(x, y, value) {
+  var array = [];
+  for (var i = 0; i < x; i++) {
+    array[i] = [];
+    for (var j = 0; j < y; j++) {
+      array[i][j] = value;
+    }
+  }
+  return array;
+};
+
+var backDisplay = function() {
+  $("#board").empty();
+  for (var y = 1; y <= Y; y++) {
+    for (var x = 1; x <= X; x++) {
+      var div = $("<div>");
+      switch (board[x][y]) {
+        case 1: div.addClass("red"); break;
+        case 2: div.addClass("blue"); break;
+        case 3: div.addClass("yellow"); break;
+        case 4: div.addClass("green"); break;
+      }
+      $("#board").append(div);
+    }
+  }
+};
+
+var numberToColor = function(num) {
+  switch (num) {
+    case 1: return "red";
+    case 2: return "blue";
+    case 3: return "yellow";
+    case 4: return "green";
+  }
+};
+
+var pairDisplay = function() {
+  $("#board div").eq((p0.y - 1) * 6 + (p0.x - 1)).removeClass().addClass(numberToColor(pair[0]));
+  $("#board div").eq((p1.y - 1) * 6 + (p1.x - 1)).removeClass().addClass(numberToColor(pair[1]));
+};
+
+var boardDisplay = function() {
+  backDisplay();
+  pairDisplay();
+};
+
+// ボードの情報を設定（番兵を含む）
+var board = twoArray(X + 2, Y + 2, 0);
+
+// 番兵を壁にする
+for (var x = 0; x < X + 2; x++) {
+  for (var y = 0; y < Y + 2; y++) {
+    if (x == 0 || x == X + 1 || y == 0 || y == Y + 1) {
+      board[x][y] = -1;
+    }
+  }
+}
+
+// 落ちてくる1組のぷよの情報
+var pair = [1, 3],
+    direction = 0,
+    p0 = { x: 3, y: 1 },
+    p1 = { x: 4, y: 1 };
+
+var anotherPoint = function(x, y, dir) {
+  var c = Math.round(Math.cos(dir * Math.PI / 2));
+  var s = Math.round(Math.sin(dir * Math.PI / 2));
+
+  return { x: x + c, y: y + s };
+};
+
+var setAnotherPoint = function() {
+  p1 = anotherPoint(p0.x, p0.y, direction);
+};
+
+// 操作ぷよを回転させる
+var pairRotate = function() {
+  var dir = direction + 1;
+  var p1 = anotherPoint(p0.x, p0.y, dir);
+
+  if (board[p1.x][p1.y] == 0) {
+    direction += 1;
+    setAnotherPoint();
+    return true;
+  } else {
+    return false;
+  }
+};
+
+// 操作ぷよを移動させる
+var pairMove = function(dx, dy) {
+  if (board[p0.x + dx][p0.y + dy] == 0
+   && board[p1.x + dx][p1.y + dy] == 0) {
+    p0.x += dx; p0.y += dy;
+    p1.x += dx; p1.y += dy;
+    return true;
+  } else {
+    return false;
+  }
+}
+
+$("body").keydown(function(e) {
+  switch (e.keyCode) {
+    case 32: pairRotate(); break;
+    case 37: pairMove(-1, 0); break;
+    case 39: pairMove( 1, 0); break;
+    case 40: pairMove( 0, 1); break;
+    case 38: while (pairMove(0, 1)); break;
+  }
+  boardDisplay();
+});
+
+var makePair = function() {
+  direction = 0;
+  pair = [Math.floor(Math.random() * 4 + 1), Math.floor(Math.random() * 4 + 1)];
+  p0 = { x: 3, y: 1 };
+  setAnotherPoint();
+};
+
+var gravity = function() {
+  for (var x = 1; x <= X; x++) {
+    for (var y = Y; y >= 1; y--) {
+      if (board[x][y] != 0) {
+        var wy = y, color = board[x][y];
+
+        wy++;
+        while (board[x][wy] == 0) wy++;
+        wy--;
+
+        board[x][y] = 0;
+        board[x][wy] = color;
+      }
+    }
+  }
+};
+
+var deletePuyo = function() {
+  var isDelete = false;
+
+  // 四方に同じ色がないかどうかを調査する（再帰使用）
+  var recursion = function(x, y, color, bd) {
+    bd[x][y] = true;
+    for (var i = 0; i < 4; i++) {
+      var c = Math.round(Math.cos(i * Math.PI / 2));
+      var s = Math.round(Math.sin(i * Math.PI / 2));
+
+      var dx = x + c, dy = y + s;
+      if (bd[dx][dy] === false && board[dx][dy] === color) {
+        recursion(dx, dy, color, bd);
+      }
+    }
+  };
+
+  for (var x = 1; x <= X; x++) {
+    for (var y = 1; y <= Y; y++) {
+      var color = board[x][y],
+          bd = twoArray(X + 2, Y + 2, false),
+          count = 0;
+
+      if (color > 0) {
+        recursion(x, y, color, bd);
+
+        for (var i = 1; i <= X; i++) {
+          for (var j = 1; j <= Y; j++) {
+            if (bd[i][j]) count += 1;
+          }
+        }
+
+        // 4つ以上繋がっていればぷよを消す
+        if (count >= 4) {
+          for (var i = 1; i <= X; i++) {
+            for (var j = 1; j <= Y; j++) {
+              if (bd[i][j]) board[i][j] = 0;
+            }
+          }
+          isDelete = true;
+        }
+      }
+    }
+  }
+
+  return isDelete;
+};
+
+var pairGravity = function() {
+  if (!pairMove(0, 1)) {
+    board[p0.x][p0.y] = pair[0];
+    board[p1.x][p1.y] = pair[1];
+
+    gravity();
+    while (deletePuyo()) gravity();
+
+    if (board[3][1] == 0 && board[4][1] == 0) {
+      makePair();
+    }
+  }
+
+  boardDisplay();
+
+  window.setTimeout(pairGravity, 500);
+};
+
+pairGravity();
+</script>
