@@ -1,44 +1,25 @@
 <!DOCTYPE html>
+<meta charset="UTF-8">
 <style>
-#board {
-  width: 192px;
-  height: 384px;
+#puyo_board {
   border: 1px solid black;
 }
-
-#board div {
-  float: left;
-  width: 32px;
-  height: 32px;
-}
-
-#board div.red {
-  background-color: red;
-}
-
-#board div.blue {
-  background-color: blue;
-}
-
-#board div.yellow {
-  background-color: yellow;
-}
-
-#board div.green {
-  background-color: green;
-}
-
-#board div.test {
-  background-color: black;
-}
 </style>
-<div id="board"></div>
+<canvas id="puyo_board" width="144" height="288"></div>
 <script src="jquery.js"></script>
 <script src="underscore.js"></script>
 
 <script>
+$(function() {
+
 var X = 6,
-    Y = 12;
+    Y = 12,
+    Y_SPACE = 3, // 画面外の空白の数
+    game = true,
+    pairGravityID,
+    gInterval = 300;
+
+var con = $("#puyo_board")[0].getContext("2d");
 
 var toArray = function(likeArray) {
   return Array.prototype.slice.call(likeArray, 0);
@@ -60,23 +41,7 @@ var twoArray = function(x, y, value) {
   return array;
 };
 
-var backDisplay = function() {
-  $("#board").empty();
-  for (var y = 1; y <= Y; y++) {
-    for (var x = 1; x <= X; x++) {
-      var div = $("<div>");
-      switch (board[x][y]) {
-        case 1: div.addClass("red"); break;
-        case 2: div.addClass("blue"); break;
-        case 3: div.addClass("yellow"); break;
-        case 4: div.addClass("green"); break;
-      }
-      $("#board").append(div);
-    }
-  }
-};
-
-var numberToColor = function(num) {
+var numColor = function(num) {
   switch (num) {
     case 1: return "red";
     case 2: return "blue";
@@ -85,33 +50,39 @@ var numberToColor = function(num) {
   }
 };
 
-var pairDisplay = function() {
-  $("#board div").eq((p0.y - 1) * 6 + (p0.x - 1)).removeClass().addClass(numberToColor(pair[0]));
-  $("#board div").eq((p1.y - 1) * 6 + (p1.x - 1)).removeClass().addClass(numberToColor(pair[1]));
-};
-
 var boardDisplay = function() {
-  backDisplay();
-  pairDisplay();
+  // ボードの情報の表示
+  for (var x = 1; x <= X; x++) {
+    for (var y = 1 + Y_SPACE; y <= Y + Y_SPACE; y++) {
+      switch (board[x][y]) {
+        case 1: con.fillStyle = "red";    break;
+        case 2: con.fillStyle = "blue";   break;
+        case 3: con.fillStyle = "yellow"; break;
+        case 4: con.fillStyle = "green";  break;
+        default: con.fillStyle = "white"; break;
+      }
+      con.fillRect((x - 1) * 24, (y - Y_SPACE - 1) * 24, 24, 24);
+    }
+  }
+
+  // 2つ1組のぷよの表示
+  con.fillStyle = numColor(pair[0]);
+  con.fillRect((p0.x - 1) * 24, (p0.y - Y_SPACE - 1) * 24, 24, 24);
+  con.fillStyle = numColor(pair[1]);
+  con.fillRect((p1.x - 1) * 24, (p1.y - Y_SPACE - 1) * 24, 24, 24);
 };
 
 // ボードの情報を設定（番兵を含む）
-var board = twoArray(X + 2, Y + 2, 0);
+var board = twoArray(X + 2, Y + Y_SPACE + 2, 0);
 
 // 番兵を壁にする
 for (var x = 0; x < X + 2; x++) {
-  for (var y = 0; y < Y + 2; y++) {
-    if (x == 0 || x == X + 1 || y == 0 || y == Y + 1) {
+  for (var y = 0; y < Y + Y_SPACE + 2; y++) {
+    if (x == 0 || x == X + 1 || y == 0 || y == Y + Y_SPACE + 1) {
       board[x][y] = -1;
     }
   }
 }
-
-// 落ちてくる1組のぷよの情報
-var pair = [1, 3],
-    direction = 0,
-    p0 = { x: 3, y: 1 },
-    p1 = { x: 4, y: 1 };
 
 var anotherPoint = function(x, y, dir) {
   var c = Math.round(Math.cos(dir * Math.PI / 2));
@@ -123,6 +94,9 @@ var anotherPoint = function(x, y, dir) {
 var setAnotherPoint = function() {
   p1 = anotherPoint(p0.x, p0.y, direction);
 };
+
+// 落ちてくる1組のぷよの情報を格納する変数
+var pair, direction, p0, p1;
 
 // 操作ぷよを回転させる
 var pairRotate = function() {
@@ -151,31 +125,43 @@ var pairMove = function(dx, dy) {
 }
 
 $("body").keydown(function(e) {
+  if (!game) return;
   switch (e.keyCode) {
     case 32: pairRotate(); break;
     case 37: pairMove(-1, 0); break;
     case 39: pairMove( 1, 0); break;
     case 40: pairMove( 0, 1); break;
-    case 38: while (pairMove(0, 1)); break;
+    case 38: 
+      if (pairMove(0, 1)) {
+        clearTimeout(pairGravityID);
+        pairGravityID = setTimeout(pairGravity, gInterval);
+      }
+      while (pairMove(0, 1));
+      break;
   }
   boardDisplay();
 });
 
 var makePair = function() {
-  direction = 0;
+  direction = 3;
   pair = [Math.floor(Math.random() * 4 + 1), Math.floor(Math.random() * 4 + 1)];
-  p0 = { x: 3, y: 1 };
+  p0 = { x: 3, y: 1 + Y_SPACE };
   setAnotherPoint();
 };
 
+// ボードのぷよを落下させる（一つでも落下すればtrueを返す）
 var gravity = function() {
+  var isDrop = false;
   for (var x = 1; x <= X; x++) {
-    for (var y = Y; y >= 1; y--) {
+    for (var y = Y + Y_SPACE; y >= 1; y--) {
       if (board[x][y] != 0) {
         var wy = y, color = board[x][y];
 
         wy++;
-        while (board[x][wy] == 0) wy++;
+        while (board[x][wy] == 0) {
+          if (!isDrop) isDrop = true;
+          wy++;
+        }
         wy--;
 
         board[x][y] = 0;
@@ -183,13 +169,15 @@ var gravity = function() {
       }
     }
   }
+  return isDrop;
 };
 
+// 4つ以上繋がっているぷよを削除する（一つでも削除すればtrueを返す）
 var deletePuyo = function() {
-  var isDelete = false;
+  var isDelete = false, color, bd;
 
   // 四方に同じ色がないかどうかを調査する（再帰使用）
-  var recursion = function(x, y, color, bd) {
+  var recursion = function(x, y) {
     bd[x][y] = true;
     for (var i = 0; i < 4; i++) {
       var c = Math.round(Math.cos(i * Math.PI / 2));
@@ -197,22 +185,22 @@ var deletePuyo = function() {
 
       var dx = x + c, dy = y + s;
       if (bd[dx][dy] === false && board[dx][dy] === color) {
-        recursion(dx, dy, color, bd);
+        recursion(dx, dy);
       }
     }
   };
 
   for (var x = 1; x <= X; x++) {
-    for (var y = 1; y <= Y; y++) {
-      var color = board[x][y],
-          bd = twoArray(X + 2, Y + 2, false),
-          count = 0;
+    for (var y = 1; y <= Y + Y_SPACE; y++) {
+      color = board[x][y];
+      bd = twoArray(X + 2, Y + Y_SPACE + 2, false);
+      count = 0;
 
       if (color > 0) {
         recursion(x, y, color, bd);
 
         for (var i = 1; i <= X; i++) {
-          for (var j = 1; j <= Y; j++) {
+          for (var j = 1 + Y_SPACE; j <= Y + Y_SPACE; j++) {
             if (bd[i][j]) count += 1;
           }
         }
@@ -220,7 +208,7 @@ var deletePuyo = function() {
         // 4つ以上繋がっていればぷよを消す
         if (count >= 4) {
           for (var i = 1; i <= X; i++) {
-            for (var j = 1; j <= Y; j++) {
+            for (var j = 1 + Y_SPACE; j <= Y + Y_SPACE; j++) {
               if (bd[i][j]) board[i][j] = 0;
             }
           }
@@ -233,23 +221,104 @@ var deletePuyo = function() {
   return isDelete;
 };
 
+var sleep = function(time) {
+  var d = new $.Deferred;
+  setTimeout(function() {
+    d.resolve();
+  }, time);
+  return d.promise();
+};
+
 var pairGravity = function() {
+
+  // pred関数が偽を返すまで、func関数を実行し続ける
+  var rec = function(func, pred) {
+    var d = new $.Deferred();
+    $.when(func()).done(function() {
+      $.when(pred()).done(function(bool) {
+        if (bool) {
+          rec(func, pred).done(function() { d.resolve(); });
+        } else {
+          d.resolve();
+        }
+      });
+    });
+    return d.promise();
+  };
+
+  // アニメーション付き（予定）ぷよの落下
+  // sleep(gInterval)の部分をアニメーションのコードに書き換える
+  var asyncGravity = function() {
+    var d = $.Deferred();
+    if (gravity()) {
+      boardDisplay();
+      sleep(gInterval).done(function() {
+        d.resolve(); // 落ち終えたことを報告している
+      });
+    } else {
+      d.resolve(); // 一つも落ちなかったら間を置かずに次の処理へ
+    }
+    return d.promise();
+  };
+
+  // アニメーション付き（予定）ぷよの消滅
+  // sleep(gInterval)の部分をアニメーションのコードに書き換える
+  var asyncDeletePuyo = function() {
+    var d = $.Deferred();
+    if (deletePuyo()) {
+      boardDisplay();
+      sleep(gInterval).done(function() {
+        d.resolve(true); // 消滅し終えたことを報告している
+      });
+    } else {
+      d.resolve(false); // 一つも削除されなかったら間を置かずに次の処理へ
+    }
+    return d.promise();
+  };
+
+  // アニメーションが終わった時の処理
+  var endAsync = function() {
+    if (board[3][1+Y_SPACE] == 0 && board[4][1+Y_SPACE] == 0) {
+      makePair();
+    } else {
+      gameOver();
+      boardDisplay();
+      return false;
+    }
+    boardDisplay();
+    pairGravityID = setTimeout(pairGravity, gInterval);
+  };
+
   if (!pairMove(0, 1)) {
+    clearTimeout(pairGravityID);
+
+    // ペアぷよをボードに反映させる
     board[p0.x][p0.y] = pair[0];
     board[p1.x][p1.y] = pair[1];
 
-    gravity();
-    while (deletePuyo()) gravity();
+    // ペアぷよを画面外に移動させる
+    p0.x = 3; p0.y = 1;
+    p1.x = 4; p1.y = 1;
 
-    if (board[3][1] == 0 && board[4][1] == 0) {
-      makePair();
-    }
+    // 落下と消滅を繰り返し、それらが終わったらネクストぷよを作ってタイマー再動！
+    rec(asyncGravity, asyncDeletePuyo).done(endAsync);
+
+  } else {
+    boardDisplay();
+    pairGravityID = setTimeout(pairGravity, gInterval);
   }
-
-  boardDisplay();
-
-  window.setTimeout(pairGravity, 500);
 };
 
-pairGravity();
+var gameInit = function() {
+  makePair();
+  pairGravity();
+};
+
+var gameOver = function() {
+  game = false;
+};
+
+gameInit();
+
+});
 </script>
