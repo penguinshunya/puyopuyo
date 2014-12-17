@@ -1,52 +1,133 @@
 <!DOCTYPE html>
+<meta charset="UTF-8">
 <style>
-#board {
-  width: 192px;
-  height: 384px;
-  border: 1px solid black;
+html {
+  text-align: center;
 }
 
-#board div {
-  float: left;
-  width: 32px;
-  height: 32px;
+#wrap {
+  position: relative;
+  margin: 0 auto;
+  width: 640px;
+  height: 480px;
 }
 
-#board div.red {
-  background-color: red;
+#wrap canvas {
+  position: absolute;
 }
 
-#board div.blue {
-  background-color: blue;
+#stage {
+  top: 0;
+  left: 0;
+  background-image: url(image/back.jpg);
 }
 
-#board div.yellow {
-  background-color: yellow;
+#ojama1,
+#ojama2 {
+  top: 15px;
+  background-color: rgba(0, 0, 0, 0.6);
 }
 
-#board div.green {
-  background-color: green;
+#ojama1 {
+  left: 88px;
 }
 
-#board div.test {
-  background-color: black;
+#ojama2 {
+  left: 408px;
+}
+
+#puyo_board1,
+#puyo_board2 {
+  top: 50px;
+  background-color: rgba(0, 0, 0, 0.6);
+}
+
+#puyo_board1 {
+  left: 88px;
+}
+
+#puyo_board2 {
+  left: 408px;
+}
+
+#next_puyo1,
+#next_puyo2 {
+  top: 50px;
+  background-color: rgba(0, 0, 0, 0.6);
+}
+
+#next_puyo1 {
+  left: 247px;
+}
+
+#next_puyo2 {
+  left: 369px;
+}
+
+#point1,
+#point2 {
+  top: 353px;
+  background-color: rgba(0, 0, 0, 0.6);
+}
+
+#point1 {
+  left: 88px;
+}
+
+#point2 {
+  left: 408px;
 }
 </style>
-<div id="board"></div>
-<script src="jquery.js"></script>
-<script src="underscore.js"></script>
+<div id="wrap">
+  <canvas id="stage" width="640" height="480"></canvas>
+  <canvas id="ojama1" width="144" height="24"></canvas>
+  <canvas id="ojama2" width="144" height="24"></canvas>
+  <canvas id="puyo_board1" width="144" height="288"></canvas>
+  <canvas id="puyo_board2" width="144" height="288"></canvas>
+  <canvas id="next_puyo1" width="24" height="48"></canvas>
+  <canvas id="next_puyo2" width="24" height="48"></canvas>
+  <canvas id="point1" width="144" height="24"></canvas>
+  <canvas id="point2" width="144" height="24"></canvas>
+</div>
+
+<input type="text" id="tensu" value="0">
+<script src="../jquery.js"></script>
+<script src="../underscore.js"></script>
+<script src=""
 
 <script>
+$(function() {
+
+var image = [];
+image[1] = new Image();
+image[1].src = "image/puyo1.png";
+image[2] = new Image();
+image[2].src = "image/puyo2.png";
+image[3] = new Image();
+image[3].src = "image/puyo3.png";
+image[4] = new Image();
+image[4].src = "image/puyo4.png";
+
 var X = 6,
-    Y = 12;
+    Y = 12,
+    Y_SPACE = 3, // 画面外の空白の数
+    game = true,
+    pairGravityID,
+    gInterval = 300;
 
-var toArray = function(likeArray) {
-  return Array.prototype.slice.call(likeArray, 0);
-};
+var board;
 
-var p = function() {
-  console.log.apply(console, toArray(arguments));
-};
+// 落ちてくる1組のぷよの情報を格納する変数
+var pair, direction, p0, p1,
+    pairNext;
+
+var point = 0;
+
+var con = $("#puyo_board1")[0].getContext("2d");
+
+var chain; // 連鎖数
+
+var ojama = 0; // お邪魔ぷよの数
 
 // 二次元配列の作成
 var twoArray = function(x, y, value) {
@@ -60,58 +141,32 @@ var twoArray = function(x, y, value) {
   return array;
 };
 
-var backDisplay = function() {
-  $("#board").empty();
-  for (var y = 1; y <= Y; y++) {
-    for (var x = 1; x <= X; x++) {
-      var div = $("<div>");
-      switch (board[x][y]) {
-        case 1: div.addClass("red"); break;
-        case 2: div.addClass("blue"); break;
-        case 3: div.addClass("yellow"); break;
-        case 4: div.addClass("green"); break;
-      }
-      $("#board").append(div);
+var boardDisplay = function() {
+  con.clearRect(0, 0, 144, 288);
+  // ボードの情報の表示
+  for (var x = 1; x <= X; x++) {
+    for (var y = 1 + Y_SPACE; y <= Y + Y_SPACE; y++) {
+      if (board[x][y] == 0) continue;
+      con.drawImage(image[board[x][y]], (x - 1) * 24, (y - Y_SPACE - 1) * 24);
     }
   }
+
+  // 2つ1組のぷよの表示
+  con.drawImage(image[pair[0]], (p0.x - 1) * 24, (p0.y - Y_SPACE - 1) * 24);
+  con.drawImage(image[pair[1]], (p1.x - 1) * 24, (p1.y - Y_SPACE - 1) * 24);
 };
 
-var numberToColor = function(num) {
-  switch (num) {
-    case 1: return "red";
-    case 2: return "blue";
-    case 3: return "yellow";
-    case 4: return "green";
-  }
-};
-
-var pairDisplay = function() {
-  $("#board div").eq((p0.y - 1) * 6 + (p0.x - 1)).removeClass().addClass(numberToColor(pair[0]));
-  $("#board div").eq((p1.y - 1) * 6 + (p1.x - 1)).removeClass().addClass(numberToColor(pair[1]));
-};
-
-var boardDisplay = function() {
-  backDisplay();
-  pairDisplay();
-};
-
-// ボードの情報を設定（番兵を含む）
-var board = twoArray(X + 2, Y + 2, 0);
+// ボードの情報を設定（画面外の空白、番兵を含む）
+board = twoArray(X + 2, Y + Y_SPACE + 2, 0);
 
 // 番兵を壁にする
 for (var x = 0; x < X + 2; x++) {
-  for (var y = 0; y < Y + 2; y++) {
-    if (x == 0 || x == X + 1 || y == 0 || y == Y + 1) {
+  for (var y = 0; y < Y + Y_SPACE + 2; y++) {
+    if (x == 0 || x == X + 1 || y == 0 || y == Y + Y_SPACE + 1) {
       board[x][y] = -1;
     }
   }
 }
-
-// 落ちてくる1組のぷよの情報
-var pair = [1, 3],
-    direction = 0,
-    p0 = { x: 3, y: 1 },
-    p1 = { x: 4, y: 1 };
 
 var anotherPoint = function(x, y, dir) {
   var c = Math.round(Math.cos(dir * Math.PI / 2));
@@ -151,31 +206,43 @@ var pairMove = function(dx, dy) {
 }
 
 $("body").keydown(function(e) {
+  if (!game) return;
   switch (e.keyCode) {
     case 32: pairRotate(); break;
     case 37: pairMove(-1, 0); break;
     case 39: pairMove( 1, 0); break;
     case 40: pairMove( 0, 1); break;
-    case 38: while (pairMove(0, 1)); break;
+    case 38: 
+      if (pairMove(0, 1)) {
+        clearTimeout(pairGravityID);
+        pairGravityID = setTimeout(pairGravity, gInterval);
+      }
+      while (pairMove(0, 1));
+      break;
   }
   boardDisplay();
 });
 
 var makePair = function() {
-  direction = 0;
+  direction = 3;
   pair = [Math.floor(Math.random() * 4 + 1), Math.floor(Math.random() * 4 + 1)];
-  p0 = { x: 3, y: 1 };
+  p0 = { x: 3, y: 1 + Y_SPACE };
   setAnotherPoint();
 };
 
+// ボードのぷよを落下させる（一つでも落下すればtrueを返す）
 var gravity = function() {
+  var isDrop = false;
   for (var x = 1; x <= X; x++) {
-    for (var y = Y; y >= 1; y--) {
+    for (var y = Y + Y_SPACE; y >= 1; y--) {
       if (board[x][y] != 0) {
         var wy = y, color = board[x][y];
 
         wy++;
-        while (board[x][wy] == 0) wy++;
+        while (board[x][wy] == 0) {
+          if (!isDrop) isDrop = true;
+          wy++;
+        }
         wy--;
 
         board[x][y] = 0;
@@ -183,13 +250,16 @@ var gravity = function() {
       }
     }
   }
+  return isDrop;
 };
 
+// 4つ以上繋がっているぷよを削除する（一つでも削除すればtrueを返す）
 var deletePuyo = function() {
-  var isDelete = false;
+  var isDelete = false, color, bd, count,
+      deleteData = [];
 
   // 四方に同じ色がないかどうかを調査する（再帰使用）
-  var recursion = function(x, y, color, bd) {
+  var recursion = function(x, y) {
     bd[x][y] = true;
     for (var i = 0; i < 4; i++) {
       var c = Math.round(Math.cos(i * Math.PI / 2));
@@ -197,22 +267,22 @@ var deletePuyo = function() {
 
       var dx = x + c, dy = y + s;
       if (bd[dx][dy] === false && board[dx][dy] === color) {
-        recursion(dx, dy, color, bd);
+        recursion(dx, dy);
       }
     }
   };
 
   for (var x = 1; x <= X; x++) {
-    for (var y = 1; y <= Y; y++) {
-      var color = board[x][y],
-          bd = twoArray(X + 2, Y + 2, false),
-          count = 0;
+    for (var y = 1; y <= Y + Y_SPACE; y++) {
+      color = board[x][y];
+      bd = twoArray(X + 2, Y + Y_SPACE + 2, false);
+      count = 0;
 
       if (color > 0) {
         recursion(x, y, color, bd);
 
         for (var i = 1; i <= X; i++) {
-          for (var j = 1; j <= Y; j++) {
+          for (var j = 1 + Y_SPACE; j <= Y + Y_SPACE; j++) {
             if (bd[i][j]) count += 1;
           }
         }
@@ -220,36 +290,237 @@ var deletePuyo = function() {
         // 4つ以上繋がっていればぷよを消す
         if (count >= 4) {
           for (var i = 1; i <= X; i++) {
-            for (var j = 1; j <= Y; j++) {
+            for (var j = 1 + Y_SPACE; j <= Y + Y_SPACE; j++) {
               if (bd[i][j]) board[i][j] = 0;
             }
           }
+          deleteData.push({ color: color, count: count });
           isDelete = true;
         }
       }
     }
   }
 
+  var tempPoint;
+
+  if (isDelete) {
+    chain += 1;
+    tempPoint = calcPoint(deleteData);
+    point += tempPoint;
+    ojama += Math.round(tempPoint / 70);
+    ojamaDisplay();
+    console.log(ojama);
+    $("#point").val(point);
+  }
+
   return isDelete;
+};
+
+var jcon = $("#ojama1")[0].getContext("2d");
+
+var ojamaDisplay = function() {
+  var red, big, sml, c = 0;
+
+  red = Math.floor(ojama / 30);
+  big = Math.floor((ojama - red * 30) / 6);
+  sml = ojama - red * 30 - big * 6;
+
+  jcon.clearRect(0, 0, 144, 24);
+  while (c < 6) {
+    if (red > 0) {
+      jcon.fillStyle = "red";
+      jcon.fillRect(c * 24, 0, 24, 24);
+      red -= 1;
+    } else if (big > 0) {
+      jcon.fillStyle = "black";
+      jcon.fillRect(c * 24, 0, 24, 24);
+      big -= 1;
+    } else if (sml > 0) {
+      jcon.fillStyle = "gray";
+      jcon.fillRect(c * 24, 0, 24, 24);
+      sml -= 1;
+    }
+    c += 1;
+  }
+};
+
+// 点数の算出
+// http://dic.nicovideo.jp/a/%E3%81%8A%E3%81%98%E3%82%83%E3%81%BE%E3%81%B7%E3%82%88%E7%AE%97
+var calcPoint = function(data) {
+  var std, // 基本点
+      ratio, // 倍率
+      temp;
+
+  /* 基本点の計算 */
+  std = _.reduce(data, function(memo, obj) {
+    return memo + obj.count;
+  }, 0) * 10;
+
+  /*============*
+   * 倍率の計算 *
+   *============*/
+
+  // 連鎖による加算
+  if (chain == 1) {
+    ratio = 0;
+  } else {
+    temp = Math.pow(2, chain + 1);
+    ratio = temp > 999 ? 999 : temp;
+  }
+
+  // 同時消しによる加算
+  temp = _.chain(data)
+    .map(function(obj) { return obj.color; })
+    .uniq().value().length;
+  if (temp == 1) {
+    ratio += 0;
+  } else {
+    ratio += 3 * Math.pow(2, temp - 2);
+  }
+
+  // 連結による加算
+  ratio += _.reduce(data, function(memo, obj) {
+    if (obj.count > 4 && obj.count < 11) {
+      return memo + obj.count - 3;
+    } else if (obj.count >= 11) {
+      return memo + 10;
+    } else {
+      return memo;
+    }
+  }, 0);
+
+  if (ratio == 0) ratio = 1;
+
+  return std * ratio;
+};
+
+var sleep = function(time) {
+  var d = new $.Deferred;
+  setTimeout(function() {
+    d.resolve();
+  }, time);
+  return d.promise();
+};
+
+// pred関数が偽を返すまで、func関数を実行し続ける
+var rec = function(func, pred) {
+  var d = new $.Deferred();
+  $.when(func()).done(function() {
+    $.when(pred()).done(function(bool) {
+      if (bool) {
+        rec(func, pred).done(function() { d.resolve(); });
+      } else {
+        d.resolve();
+      }
+    });
+  });
+  return d.promise();
+};
+
+// アニメーション付き（予定）ぷよの落下
+// sleep(gInterval)の部分をアニメーションのコードに書き換える
+var asyncGravity = function() {
+  var d = $.Deferred();
+  if (gravity()) {
+    boardDisplay();
+    sleep(gInterval).done(function() {
+      d.resolve(); // 落ち終えたことを報告している
+    });
+  } else {
+    d.resolve(); // 一つも落ちなかったら間を置かずに次の処理へ
+  }
+  return d.promise();
+};
+
+// アニメーション付き（予定）ぷよの消滅
+// sleep(gInterval)の部分をアニメーションのコードに書き換える
+var asyncDeletePuyo = function() {
+  var d = $.Deferred();
+  if (deletePuyo()) {
+    boardDisplay();
+    sleep(gInterval).done(function() {
+      d.resolve(true); // 消滅し終えたことを報告している
+    });
+  } else {
+    d.resolve(false); // 一つも削除されなかったら間を置かずに次の処理へ
+  }
+  return d.promise();
+};
+
+// アニメーションが終わった時の処理
+var endAsync = function() {
+  if (board[3][1+Y_SPACE] == 0) {
+    takePair();
+    makeNext();
+  } else {
+    gameOver();
+    boardDisplay();
+    return false;
+  }
+  boardDisplay();
+  pairGravityID = setTimeout(pairGravity, gInterval);
 };
 
 var pairGravity = function() {
   if (!pairMove(0, 1)) {
+    clearTimeout(pairGravityID);
+
+    // ペアぷよをボードに反映させる
     board[p0.x][p0.y] = pair[0];
     board[p1.x][p1.y] = pair[1];
 
-    gravity();
-    while (deletePuyo()) gravity();
+    // ペアぷよを画面外に移動させる
+    p0.x = 3; p0.y = 1;
+    p1.x = 4; p1.y = 1;
 
-    if (board[3][1] == 0 && board[4][1] == 0) {
-      makePair();
-    }
+    chain = 0;
+
+    // 落下と消滅を繰り返し、それらが終わったらネクストぷよを作ってタイマー再動！
+    rec(asyncGravity, asyncDeletePuyo).done(endAsync);
+
+  } else {
+    boardDisplay();
+    pairGravityID = setTimeout(pairGravity, gInterval);
   }
-
-  boardDisplay();
-
-  window.setTimeout(pairGravity, 500);
 };
 
-pairGravity();
+var makeNext = function() {
+  pairNext = [Math.floor(Math.random() * 4 + 1), Math.floor(Math.random() * 4 + 1)];
+
+  // ネクストぷよの表示
+  var c = $("#next_puyo1")[0].getContext("2d");
+  c.drawImage(image[pairNext[0]], 0, 24);
+  c.drawImage(image[pairNext[1]], 0, 0);
+};
+
+var takePair = function() {
+  direction = 3;
+  pair = pairNext;
+  p0 = { x: 3, y: 1 + Y_SPACE };
+  setAnotherPoint();
+};
+
+var gameInit = function() {
+  var c = 0;
+  for (var i = 1; i <= 4; i++) {
+    image[i].addEventListener("load", function() {
+      c += 1;
+      if (c == 4) {
+        point = 0;
+        makeNext();
+        takePair();
+        makeNext();
+        pairGravity();
+      }
+    }, false);
+  }
+};
+
+var gameOver = function() {
+  game = false;
+};
+
+gameInit();
+
+});
 </script>
