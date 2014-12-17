@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <meta charset="UTF-8">
 <style>
+<<<<<<< HEAD
 html {
   text-align: center;
 }
@@ -94,10 +95,20 @@ html {
 <script src="../jquery.js"></script>
 <script src="../underscore.js"></script>
 <script src=""
+=======
+#puyo_board {
+  border: 1px solid black;
+}
+</style>
+<canvas id="puyo_board" width="144" height="288"></div>
+<script src="jquery.js"></script>
+<script src="underscore.js"></script>
+>>>>>>> FETCH_HEAD
 
 <script>
 $(function() {
 
+<<<<<<< HEAD
 var image = [];
 image[1] = new Image();
 image[1].src = "image/puyo1.png";
@@ -108,12 +119,19 @@ image[3].src = "image/puyo3.png";
 image[4] = new Image();
 image[4].src = "image/puyo4.png";
 
+=======
+>>>>>>> FETCH_HEAD
 var X = 6,
     Y = 12,
     Y_SPACE = 3, // 画面外の空白の数
     game = true,
     pairGravityID,
     gInterval = 300;
+<<<<<<< HEAD
+=======
+
+var con = $("#puyo_board")[0].getContext("2d");
+>>>>>>> FETCH_HEAD
 
 var board;
 
@@ -141,6 +159,7 @@ var twoArray = function(x, y, value) {
   return array;
 };
 
+<<<<<<< HEAD
 var boardDisplay = function() {
   con.clearRect(0, 0, 144, 288);
   // ボードの情報の表示
@@ -148,16 +167,50 @@ var boardDisplay = function() {
     for (var y = 1 + Y_SPACE; y <= Y + Y_SPACE; y++) {
       if (board[x][y] == 0) continue;
       con.drawImage(image[board[x][y]], (x - 1) * 24, (y - Y_SPACE - 1) * 24);
+=======
+var numColor = function(num) {
+  switch (num) {
+    case 1: return "red";
+    case 2: return "blue";
+    case 3: return "yellow";
+    case 4: return "green";
+  }
+};
+
+var boardDisplay = function() {
+  // ボードの情報の表示
+  for (var x = 1; x <= X; x++) {
+    for (var y = 1 + Y_SPACE; y <= Y + Y_SPACE; y++) {
+      switch (board[x][y]) {
+        case 1: con.fillStyle = "red";    break;
+        case 2: con.fillStyle = "blue";   break;
+        case 3: con.fillStyle = "yellow"; break;
+        case 4: con.fillStyle = "green";  break;
+        default: con.fillStyle = "white"; break;
+      }
+      con.fillRect((x - 1) * 24, (y - Y_SPACE - 1) * 24, 24, 24);
+>>>>>>> FETCH_HEAD
     }
   }
 
   // 2つ1組のぷよの表示
+<<<<<<< HEAD
   con.drawImage(image[pair[0]], (p0.x - 1) * 24, (p0.y - Y_SPACE - 1) * 24);
   con.drawImage(image[pair[1]], (p1.x - 1) * 24, (p1.y - Y_SPACE - 1) * 24);
 };
 
 // ボードの情報を設定（画面外の空白、番兵を含む）
 board = twoArray(X + 2, Y + Y_SPACE + 2, 0);
+=======
+  con.fillStyle = numColor(pair[0]);
+  con.fillRect((p0.x - 1) * 24, (p0.y - Y_SPACE - 1) * 24, 24, 24);
+  con.fillStyle = numColor(pair[1]);
+  con.fillRect((p1.x - 1) * 24, (p1.y - Y_SPACE - 1) * 24, 24, 24);
+};
+
+// ボードの情報を設定（番兵を含む）
+var board = twoArray(X + 2, Y + Y_SPACE + 2, 0);
+>>>>>>> FETCH_HEAD
 
 // 番兵を壁にする
 for (var x = 0; x < X + 2; x++) {
@@ -178,6 +231,9 @@ var anotherPoint = function(x, y, dir) {
 var setAnotherPoint = function() {
   p1 = anotherPoint(p0.x, p0.y, direction);
 };
+
+// 落ちてくる1組のぷよの情報を格納する変数
+var pair, direction, p0, p1;
 
 // 操作ぷよを回転させる
 var pairRotate = function() {
@@ -255,8 +311,12 @@ var gravity = function() {
 
 // 4つ以上繋がっているぷよを削除する（一つでも削除すればtrueを返す）
 var deletePuyo = function() {
+<<<<<<< HEAD
   var isDelete = false, color, bd, count,
       deleteData = [];
+=======
+  var isDelete = false, color, bd;
+>>>>>>> FETCH_HEAD
 
   // 四方に同じ色がないかどうかを調査する（再帰使用）
   var recursion = function(x, y) {
@@ -316,6 +376,7 @@ var deletePuyo = function() {
   return isDelete;
 };
 
+<<<<<<< HEAD
 var jcon = $("#ojama1")[0].getContext("2d");
 
 var ojamaDisplay = function() {
@@ -394,6 +455,8 @@ var calcPoint = function(data) {
   return std * ratio;
 };
 
+=======
+>>>>>>> FETCH_HEAD
 var sleep = function(time) {
   var d = new $.Deferred;
   setTimeout(function() {
@@ -402,6 +465,7 @@ var sleep = function(time) {
   return d.promise();
 };
 
+<<<<<<< HEAD
 // pred関数が偽を返すまで、func関数を実行し続ける
 var rec = function(func, pred) {
   var d = new $.Deferred();
@@ -461,7 +525,68 @@ var endAsync = function() {
   pairGravityID = setTimeout(pairGravity, gInterval);
 };
 
+=======
+>>>>>>> FETCH_HEAD
 var pairGravity = function() {
+
+  // pred関数が偽を返すまで、func関数を実行し続ける
+  var rec = function(func, pred) {
+    var d = new $.Deferred();
+    $.when(func()).done(function() {
+      $.when(pred()).done(function(bool) {
+        if (bool) {
+          rec(func, pred).done(function() { d.resolve(); });
+        } else {
+          d.resolve();
+        }
+      });
+    });
+    return d.promise();
+  };
+
+  // アニメーション付き（予定）ぷよの落下
+  // sleep(gInterval)の部分をアニメーションのコードに書き換える
+  var asyncGravity = function() {
+    var d = $.Deferred();
+    if (gravity()) {
+      boardDisplay();
+      sleep(gInterval).done(function() {
+        d.resolve(); // 落ち終えたことを報告している
+      });
+    } else {
+      d.resolve(); // 一つも落ちなかったら間を置かずに次の処理へ
+    }
+    return d.promise();
+  };
+
+  // アニメーション付き（予定）ぷよの消滅
+  // sleep(gInterval)の部分をアニメーションのコードに書き換える
+  var asyncDeletePuyo = function() {
+    var d = $.Deferred();
+    if (deletePuyo()) {
+      boardDisplay();
+      sleep(gInterval).done(function() {
+        d.resolve(true); // 消滅し終えたことを報告している
+      });
+    } else {
+      d.resolve(false); // 一つも削除されなかったら間を置かずに次の処理へ
+    }
+    return d.promise();
+  };
+
+  // アニメーションが終わった時の処理
+  var endAsync = function() {
+    if (board[3][1+Y_SPACE] == 0 && board[4][1+Y_SPACE] == 0) {
+      makePair();
+    } else {
+      gameOver();
+      boardDisplay();
+      return false;
+    }
+    boardDisplay();
+    pairGravityID = setTimeout(pairGravity, gInterval);
+  };
+
   if (!pairMove(0, 1)) {
     clearTimeout(pairGravityID);
 
@@ -473,8 +598,11 @@ var pairGravity = function() {
     p0.x = 3; p0.y = 1;
     p1.x = 4; p1.y = 1;
 
+<<<<<<< HEAD
     chain = 0;
 
+=======
+>>>>>>> FETCH_HEAD
     // 落下と消滅を繰り返し、それらが終わったらネクストぷよを作ってタイマー再動！
     rec(asyncGravity, asyncDeletePuyo).done(endAsync);
 
@@ -484,6 +612,7 @@ var pairGravity = function() {
   }
 };
 
+<<<<<<< HEAD
 var makeNext = function() {
   pairNext = [Math.floor(Math.random() * 4 + 1), Math.floor(Math.random() * 4 + 1)];
 
@@ -520,6 +649,17 @@ var gameOver = function() {
   game = false;
 };
 
+=======
+var gameInit = function() {
+  makePair();
+  pairGravity();
+};
+
+var gameOver = function() {
+  game = false;
+};
+
+>>>>>>> FETCH_HEAD
 gameInit();
 
 });
