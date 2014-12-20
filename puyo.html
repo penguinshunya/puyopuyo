@@ -22,83 +22,47 @@ html {
   background-image: url(image/back.jpg);
 }
 
-#ojama1,
-#ojama2 {
-  top: 15px;
-  background-color: rgba(0, 0, 0, 0.6);
-}
+#ojama1, #ojama2 { top: 0; background-color: rgba(0, 0, 0, 0.6); }
+#ojama1 { left: 25px; }
+#ojama2 { right: 25px; }
 
-#ojama1 {
-  left: 88px;
-}
+#board1, #board2 { top: 30px; background-color: rgba(0, 0, 0, 0.6); }
+#board1 { left: 25px; }
+#board2 { right: 25px; }
 
-#ojama2 {
-  left: 408px;
-}
+#pair1, #pair2 { top: 30px; }
+#pair1 { left: 25px; }
+#pair2 { right: 25px; }
 
-#board1,
-#board2 {
-  top: 50px;
-  background-color: rgba(0, 0, 0, 0.6);
-}
+#next1, #next2 { top: 30px; background-color: rgba(0, 0, 0, 0.6); }
+#next1 { left: 275px; }
+#next2 { right: 275px; }
 
-#board1 {
-  left: 88px;
-}
+#score1, #score2 { top: 450px; background-color: rgba(0, 0, 0, 0.6); }
+#score1 { left: 25px; }
+#score2 { right: 25px; }
 
-#board2 {
-  left: 408px;
-}
-
-#pair1,#pair2 { top: 50px; }
-#pair1 { left: 88px; }
-#pair2 { left: 408px;}
-
-#next1,
-#next2 {
-  top: 50px;
-  background-color: rgba(0, 0, 0, 0.6);
-}
-
-#next1 {
-  left: 247px;
-}
-
-#next2 {
-  left: 369px;
-}
-
-#score1,
-#score2 {
-  top: 353px;
-  background-color: rgba(0, 0, 0, 0.6);
-}
-
-#score1 {
-  left: 88px;
-}
-
-#score2 {
-  left: 408px;
-}
+#carbuncle { left: 275px; bottom: 30px; background-color: black; }
 </style>
 <div id="wrap">
   <canvas id="stage" width="640" height="480"></canvas>
 
-  <canvas id="ojama1" width="144" height="24"></canvas>
-  <canvas id="ojama2" width="144" height="24"></canvas>
+  <canvas id="ojama1" width="240" height="30"></canvas>
+  <canvas id="ojama2" width="240" height="30"></canvas>
 
-  <canvas id="board1" width="144" height="288"></canvas>
-  <canvas id="board2" width="144" height="288"></canvas>
+  <canvas id="board1" width="240" height="420"></canvas>
+  <canvas id="board2" width="240" height="420"></canvas>
 
-  <canvas id="pair1" width="144" height="288"></canvas>
-  <canvas id="pair2" width="144" height="288"></canvas>
+  <canvas id="pair1" width="240" height="420"></canvas>
+  <canvas id="pair2" width="240" height="420"></canvas>
 
-  <canvas id="next1" width="24" height="48"></canvas>
-  <canvas id="next2" width="24" height="48"></canvas>
+  <canvas id="next1" width="40" height="70"></canvas>
+  <canvas id="next2" width="40" height="70"></canvas>
 
-  <canvas id="score1" width="144" height="24"></canvas>
-  <canvas id="score2" width="144" height="24"></canvas>
+  <canvas id="score1" width="240" height="30"></canvas>
+  <canvas id="score2" width="240" height="30"></canvas>
+
+  <canvas id="carbuncle" width="90" height="250"></canvas>
 </div>
 
 <script src="../jquery.js"></script>
@@ -110,10 +74,10 @@ var image = [];
 
 var X = 6,
     Y = 12,
-    Y_SPACE = 10, // 画面外の空白の数
+    Y_SPACE = 20, // 画面外の空白の数
     gInterval = 300;
 
-var dist = 3;
+var dist = 2;
 
 var loadImage = function() {
   var d = new $.Deferred(),
@@ -199,7 +163,7 @@ var gameStart = function() {
   p2.rival(p1);
 
   (function() {
-    var interval = 10;
+    var interval = 20;
 
     var downTimeoutID,
         isDown = false,
@@ -228,6 +192,7 @@ var gameStart = function() {
 
           p1.rotate();
           break;
+          
         case 37:
           e.preventDefault();
 

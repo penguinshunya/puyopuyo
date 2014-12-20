@@ -1,5 +1,11 @@
 var colorCount = 4;
 
+var Width = 40, Height = 35;
+var OjamaWidth = 40, OjamaHeight = 30;
+
+
+var nextList = [];
+
 var anotherPoint = function(x, y, dir) {
   var c = Math.round(Math.cos(dir * Math.PI / 2));
   var s = Math.round(Math.sin(dir * Math.PI / 2));
@@ -92,15 +98,15 @@ var Puyo = function(number) {
 
     interval = gInterval,
 
-    computerID
+    computerID,
+
+    nextNum = 0
 
     ; //ボードのひとつの要素を何ブロックに分けるか（ぬるぬる動かすために使用）
 
-//p1.yはboard[x][y]のyの、5倍の値を持つ
-
   cons.textAlign = "right";
   cons.textBaseline = "middle";
-  cons.font = "15px Ricty";
+  cons.font = "30px Ricty";
   cons.fillStyle = "white";
 
   var createBoard = function() {
@@ -120,22 +126,22 @@ var Puyo = function(number) {
   createBoard();
   
   var boardDisplay = function() {
-    conb.clearRect(0, 0, 144, 288);
+    conb.clearRect(0, 0, Width * X, Height * Y);
 
     // ボードの情報の表示
     for (var x = 1; x <= X; x++) {
       for (var y = 1 + Y_SPACE; y <= Y + Y_SPACE; y++) {
         if (board[x][y] == 0) continue;
-        conb.drawImage(image[board[x][y]], (x - 1) * 24, (y - Y_SPACE - 1) * 24);
+        conb.drawImage(image[board[x][y]], (x - 1) * Width, (y - Y_SPACE - 1) * Height);
       }
     }
   };
 
   var pairDisplay = function() {
-    conp.clearRect(0, 0, 144, 288);
+    conp.clearRect(0, 0, Width * X, Height * Y);
 
-    conp.drawImage(image[p1.color], (p1.x - 1) * 24, (p1.y/dist - Y_SPACE - 1) * 24);
-    conp.drawImage(image[p2.color], (p2.x - 1) * 24, (p2.y/dist - Y_SPACE - 1) * 24);
+    conp.drawImage(image[p1.color], (p1.x - 1) * Width, (p1.y/dist - Y_SPACE - 1) * Height);
+    conp.drawImage(image[p2.color], (p2.x - 1) * Width, (p2.y/dist - Y_SPACE - 1) * Height);
   };
 
   var ojamaDisplay = function() {
@@ -145,19 +151,19 @@ var Puyo = function(number) {
     big = Math.floor((ojama - red * 30) / 6);
     sml = ojama - red * 30 - big * 6;
 
-    cono.clearRect(0, 0, 144, 24);
+    cono.clearRect(0, 0, OjamaWidth * X, OjamaHeight);
     while (x < 6) {
       if (red > 0) {
         cono.fillStyle = "red";
-        cono.fillRect(x * 24, 0, 24, 24);
+        cono.fillRect(x * OjamaWidth, 0, OjamaWidth, OjamaHeight);
         red -= 1;
       } else if (big > 0) {
         cono.fillStyle = "black";
-        cono.fillRect(x * 24, 0, 24, 24);
+        cono.fillRect(x * OjamaWidth, 0, OjamaWidth, OjamaHeight);
         big -= 1;
       } else if (sml > 0) {
         cono.fillStyle = "gray";
-        cono.fillRect(x * 24, 0, 24, 24);
+        cono.fillRect(x * OjamaWidth, 0, OjamaWidth, OjamaHeight);
         sml -= 1;
       }
       x += 1;
@@ -165,13 +171,15 @@ var Puyo = function(number) {
   };
 
   var nextDisplay = function() {
-    conn.drawImage(image[n1.color], 0, 24);
+    conn.clearRect(0, 0, Width, Height * 2);
+
+    conn.drawImage(image[n1.color], 0, Height);
     conn.drawImage(image[n2.color], 0, 0);
   };
 
   var scoreDisplay = function() {
-    cons.clearRect(0, 0, 144, 24);
-    cons.fillText(score, 139, 12);
+    cons.clearRect(0, 0, Width * X, Height);
+    cons.fillText(score, 240-5, 15);
   };
 
   var setAnotherPoint = function() {
@@ -212,6 +220,7 @@ var Puyo = function(number) {
   var rotate = function() {
     if (!game) return;
     if (anime) return;
+
     var dir = (direction + 1) % 4;
     var p2 = $.extend({}, p2, anotherPoint(p1.x, p1.y, dir));
 
@@ -219,7 +228,7 @@ var Puyo = function(number) {
     if (board[p2.x][testest(p2.y/dist)] == 0) {
       direction = (direction + 1) % 4;
       setAnotherPoint();
-      pairDisplay();
+      animeRotate(p1, direction - 1, 1);
       return true;
 
     //回転するときに壁がある場合、ひとつ横に移動させてから回転させる
@@ -227,13 +236,13 @@ var Puyo = function(number) {
       move(1, 0);
       direction = (direction + 1) % 4;
       setAnotherPoint();
-      pairDisplay();
+      animeRotate(p1, direction - 1, 1);
       return true;
     } else if (dir == 0 && board[p1.x-1][testest(p1.y/dist)] == 0) {
       move(-1, 0);
       direction = (direction + 1) % 4;
       setAnotherPoint();
-      pairDisplay();
+      animeRotate(p1, direction - 1, 1);
       return true;
 
     //昇竜ぷよを行う
@@ -241,7 +250,7 @@ var Puyo = function(number) {
       move(0, -1);
       direction = (direction + 1) % 4;
       setAnotherPoint();
-      pairDisplay();
+      animeRotate(p1, direction - 1, 1);
 
       // 昇竜ぷよを行うごとに落下の間隔を短くする（無限に昇竜ぷよを行わせないため）
       interval -= gInterval / 20;
@@ -251,12 +260,12 @@ var Puyo = function(number) {
     } else if (dir == 2 && board[p1.x+1][testest(p1.y/dist)] != 0 && board[p1.x][testest(p1.y/dist)-1] == 0) {
       direction = (direction + 2) % 4;
       setAnotherPoint();
-      pairDisplay();
+      animeRotate(p1, direction - 2, 2);
       return true;
     } else if (dir == 0 && board[p1.x-1][testest(p1.y/dist)] != 0 && board[p1.x][testest(p1.y/dist)+1] == 0) {
       direction = (direction + 2) % 4;
       setAnotherPoint();
-      pairDisplay();
+      animeRotate(p1, direction - 2, 2);
       return true;
 
     } else {
@@ -413,37 +422,214 @@ var Puyo = function(number) {
         board[x][y] = 9;
       }
     }
+
+    //画面外のおじゃまぷよを画面上すぐまで落下させる
+    for (var x = 1; x <= X; x++) {
+      for (var y = Y + Y_SPACE; y >= 1; y--) {
+        if (board[x][y] == 0) continue;
+
+        dy = y;
+        while (board[x][++dy] == 0 && dy <= Y_SPACE);
+
+        color = board[x][y];
+        board[x][y] = 0;
+        board[x][--dy] = color;
+      }
+    }
+  };
+
+  //数字の符号を返す
+  var sign = function(number) {
+    return number > 0 ? 1 : number < 0 ? -1 : 0;
+  };
+
+  //ぷよを回転させるアニメーション
+  //（angle変数に1を与えることで、時計回転に90度回転する）
+  var animeRotate = function(p1, dir, angle) {
+    amine = true;
+
+    var d = $.Deferred(),
+        w2 = {}, recursion, i = -1;
+
+    recursion = function() {
+      i += 1;
+
+      //組ぷよ2つ目の座標を設定
+      w2.color = p2.color;
+      w2.x = p1.x + Math.cos((6 * dir + i * angle) / 12 * Math.PI);
+      w2.y = p1.y/dist + Math.sin((6 * dir + i * angle) / 12 * Math.PI);
+
+      conp.clearRect(0, 0, Width * 6, Height * 12);
+      conp.drawImage(image[p1.color], (p1.x - 1) * Width, (p1.y/dist - Y_SPACE - 1) * Height);
+      conp.drawImage(image[w2.color], (w2.x - 1) * Width, (w2.y - Y_SPACE - 1) * Height);
+
+      if (i < 6) {
+        setTimeout(recursion, 8);
+      } else {
+        anime = false;
+        d.resolve();
+      }
+    };
+
+    setTimeout(recursion, 8);
+
+    return d.promise();
+  };
+
+  //空中にあるぷよ（おじゃまぷよ、色ぷよ）を落下させる
+  var animeFall = function(board) {
+    var d = $.Deferred(),
+        from = [], to = [], is = [], time = 0, h, dy = [], color = [],
+        x, y, i, l,
+        a = [], r = [],
+        isAllTrue, recursion, display;
+
+    // 空中に浮いているぷよのy座標をfrom配列に代入
+    for (x = 1; x <= X; x++) {
+      from[x] = [];
+      color[x] = [];
+
+      y = Y + Y_SPACE;
+
+      //地面に接しているぷよ
+      while (board[x][--y] > 0);
+
+      //ぷよがないところ
+      while (board[x][--y] == 0);
+
+      //空中に浮いているぷよ
+      for (i = 0; y > 0; y--) {
+        if (board[x][y] == 0) continue;
+        from[x][i] = y;
+        color[x][i] = board[x][y];
+
+        //空中に浮いてるぷよは一旦ボードから削除する
+        //（アニメーションが終わった時にボードに情報を入れ直す）
+        board[x][y] = 0;
+
+        i += 1;
+      }
+    }
+
+    //to配列に、どこまで落ちるかの情報を格納する
+    for (x = 1; x <= X; x++) {
+      to[x] = [];
+      if (existy(y = from[x][0])) {
+        while (board[x][++y] == 0);
+        for (i = 0, l = from[x].length; i < l; i++) to[x][i] = --y;
+      }
+    }
+
+    //落ちたかどうかを格納するbool型の二次元配列
+    for (x = 1; x <= X; x++) {
+      is[x] = [];
+      for (y = 0, l = from[x].length; y < l; y++) is[x][y] = false;
+    }
+
+    for (var x = 1; x <= X; x++) {
+      dy[x] = [];
+    }
+
+    //ランダムな変数を作成（降ってくるぷよの位置と、使用する定数を少しだけ変える）
+    for (var x = 1; x <= X; x++) {
+      a[x] = Math.random() * 0.1 + 0.5;
+      r[x] = Math.floor(Math.random() * 30) - 30;
+    }
+
+    //すべての要素がtrueかどうかを判定する
+    isFalled = function(is) {
+      var x, y, l;
+      for (x = 1; x <= X; x++) {
+        for (y = 0, l = is[x].length; y < l; y++) {
+          if (is[x][y] === false) return false;
+        }
+      }
+      return true;
+    };
+
+    //落下中のぷよを表示する（組ぷよを表示するフレームと同じ）
+    display = function() {
+      conp.clearRect(0, 0, Width * 6, Height * 12);
+      for (var x = 1; x <= X; x++) {
+        for (var y = 0, l = dy[x].length; y < l; y++) {
+          conp.drawImage(image[color[x][y]], (x - 1) * Width, (dy[x][y] - Height));
+        }
+      }
+    };
+
+    //すべての浮遊ぷよの落下
+    recursion = function() {
+      if (isFalled(is)) {
+        for (var x = 1; x <= X; x++) {
+          for (var y = 0, l = to[x].length; y < l; y++) {
+            board[x][to[x][y]] = color[x][y];
+          }
+        }
+        pairDisplay();
+        boardDisplay();
+        d.resolve(); return true;
+      }
+
+      for (var x = 1; x <= X; x++) {
+
+        //自由落下距離
+        h = a[x] * time * time;
+        
+        for (var y = 0, l = from[x].length; y < l; y++) {
+
+          //まだぷよが空中にある場合
+          if (!is[x][y]) {
+            dy[x][y] = (from[x][y] - Y_SPACE) * Height + h + r[x];
+          }
+
+          //降ってくるぷよが下のぷよまで到達したとき
+          if (to[x][y] - Y_SPACE - 1 < Math.floor(dy[x][y] / Height)) {
+            dy[x][y] = (to[x][y] - Y_SPACE) * Height;
+            is[x][y] = true;
+          }
+        }
+      }
+      display();
+      time += 1;
+      setTimeout(recursion, 30);
+    };
+
+    boardDisplay();
+    recursion();
+
+    return d.promise();
   };
 
   // アニメーションが終わった時の処理
   var endSync = function() {
     makeOjama(board);
-    fallPuyo(board);
     ojamaDisplay();
+    animeFall(board).done(function() {
 
-    boardDisplay();
+      boardDisplay();
 
-    send(Math.round(tempScore / 70));
-    tempScore = 0;
+      send(Math.round(tempScore / 70));
+      tempScore = 0;
 
-    //昇竜ぷよを行ったことによる落下の間隔の減少を元に戻す
-    interval = gInterval;
+      //昇竜ぷよを行ったことによる落下の間隔の減少を元に戻す
+      interval = gInterval;
 
-    //思考ルーチンの計算済みデータのリセット
-    alreadyData = null;
+      //思考ルーチンの計算済みデータのリセット
+      alreadyData = null;
 
-    if (!game) return;
+      if (!game) return;
 
-    if (board[3][1+Y_SPACE] == 0) {
-      takePair();
-      makeNext();
-    } else {
-      gameOver();
-      return false;
-    }
+      if (board[3][1+Y_SPACE] == 0) {
+        takePair();
+        makeNext();
+      } else {
+        gameOver();
+        return false;
+      }
 
-    fallPairID = setTimeout(fallPair, interval);
-    anime = false;
+      fallPairID = setTimeout(fallPair, interval);
+      anime = false;
+    });
   };
 
   var resetPairInterval = function() {
@@ -468,6 +654,7 @@ var Puyo = function(number) {
       p1.x = 3; p1.y = 1*dist;
       p2.x = 4; p2.y = 1*dist;
 
+      // 組ぷよを非表示にする
       pairDisplay();
 
       chain = 0;
@@ -483,15 +670,18 @@ var Puyo = function(number) {
   };
 
   var makeNext = function() {
-    n1 = { color: Math.floor(Math.random() * colorCount + 1), x: 3, y: (0+Y_SPACE+1/dist)*dist };
-    n2 = { color: Math.floor(Math.random() * colorCount + 1), x: 3, y: (-1+Y_SPACE+1/dist)*dist };
+    n1 = Puyo.next(nextNum)[0];
+    n2 = Puyo.next(nextNum)[1];
+
+    nextNum += 1;
 
     nextDisplay();
   };
 
   var takePair = function() {
     direction = 3;
-    p1 = n1; p2 = n2;
+    p1 = $.extend({}, n1, { x: 3, y: Y_SPACE * dist });
+    p2 = $.extend({}, n2, { x: 3, y: (Y_SPACE - 1) * dist });
 
     pairDisplay();
   };
@@ -662,4 +852,13 @@ var Puyo = function(number) {
       return false;
     }
   };
+};
+
+Puyo.next = function(n) {
+  if (!existy(nextList[n])) {
+    var p1 = { color: Math.floor(Math.random() * colorCount + 1) };
+    var p2 = { color: Math.floor(Math.random() * colorCount + 1) };
+    nextList.push([p1, p2]);
+  }
+  return nextList[n];
 };
